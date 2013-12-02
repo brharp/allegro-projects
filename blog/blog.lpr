@@ -7,7 +7,7 @@
                  (make-instance 'module :name "model")
                  (make-instance 'module :name "view")
                  (make-instance 'module :name "controller"))
-  :projects nil
+  :projects (list (make-instance 'project-module :name "../forms/forms" :show-modules t))
   :libraries nil
   :editable-files nil
   :distributed-files nil
