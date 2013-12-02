@@ -2,15 +2,12 @@
 
 (in-package :cg-user)
 
-(define-project :name :learning-skills-inventory
-  :modules (list (make-instance 'module :name "bootstrap")
-                 (make-instance 'module :name "survey")
-                 (make-instance 'module :name "survey-controller")
-                 (make-instance 'module :name "survey-form")
-                 (make-instance 'module :name "grid-layout")
-                 (make-instance 'module :name "layout")
-                 (make-instance 'module :name "learning-skills-inventory"))
-  :projects (list (make-instance 'project-module :name "../forms/forms" :show-modules t))
+(define-project :name :blog
+  :modules (list (make-instance 'module :name "index")
+                 (make-instance 'module :name "model")
+                 (make-instance 'module :name "view")
+                 (make-instance 'module :name "controller"))
+  :projects nil
   :libraries nil
   :editable-files nil
   :distributed-files nil

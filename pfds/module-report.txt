@@ -1,0 +1,2 @@
+Symbols used in each CG module:
+

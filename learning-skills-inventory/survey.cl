@@ -1,35 +1,85 @@
-(in-package :learning-skills-inventory)
+;; -*- mode: common-lisp; package: survey; -*-
+;;
+;; survey.cl
+;;
+;; Copyright 2013 M. Brent Harp
+;;
+;; This program is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-(defclass survey (page)
-  ((title :initarg :title :reader survey-title)
-   (items :initarg :items :reader survey-items :initform nil)
-   (scales :initarg :scales :reader survey-scales :initform nil))
-  (:metaclass persistent-class))
 
-(defclass item ()
-  ((description :initarg :description :reader item-description))
-  (:metaclass persistent-class))
+(defpackage :survey
+  (:use :common-lisp :excl)
+  (:export #:survey))
 
-(defclass scale ()
-  ((description :initarg :description :reader scale-description)
-   (weight :initarg :weight :reader scale-weight :initform 0))
-  (:metaclass persistent-class))
 
-(defun list-surveys ()
-  (let ((surveys ()))
-    (doclass* (survey 'survey)
-              (push survey surveys))
-    surveys))
+(in-package :survey)
 
-'(make-instance 'survey
-  :title "Learning Skills Inventory"
-  :scales (list (make-instance 'scale :description "Strongly disagree" :weight 1)
-                (make-instance 'scale :description "Disagree" :weight 2)
-                (make-instance 'scale :description "Undecided" :weight 3)
-                (make-instance 'scale :description "Agree" :weight 4)
-                (make-instance 'scale :description "Strongly agree" :weight 5))
-  :items (list (make-instance 'item :description "Socks are darn great.")
-               (make-instance 'item :description "Tennis is like ping pong.")
-               (make-instance 'item :description "Bears like honey.")
-               (make-instance 'item :description "I am on fire.")
-               (make-instance 'item :description "Toast.")))
+
+(defstruct (option (:type list))
+  (weight 0   :type integer :read-only t)
+  (title  nil :type string  :read-only t))
+
+
+(defun weighted-average (weights counts total)
+  (/ (reduce #'+ (mapcar #'* weights counts)) total))
+
+
+(defun count-responses (options responses)
+  (mapcar (lambda (option) (count (option-weight option) responses)) options))
+
+
+(defun aggregate-responses (options responses)
+  (weighted-average (mapcar #'option-weight options)
+                    (count-responses options responses)
+                    (length responses)))
+
+
+(defun read-response (options)
+  (let ((option-counter 1))
+    (dolist (option options)
+      (format t "~&(~d) ~a~%" option-counter option)
+      (incf option-counter)))
+  (format t "~&Please choose: ")
+  (read))
+
+
+(defun survey (&key title options items)
+  (declare (ignore title))
+  (mapcar
+      (lambda (item)
+        (format t "~&~a~%" item)
+        (read-response options))
+    items))
+
+
+(defvar *options*
+    (list (make-option :title "Strongly disagree" :weight 1)
+          (make-option :title "Disagree" :weight 2)
+          (make-option :title "Undecided" :weight 3)
+          (make-option :title "Agree" :weight 4)
+          (make-option :title "Strongly agree" :weight 5)))
+
+
+(defvar *items*
+    (list "Socks are darn great."
+          "Tennis is like ping pong."
+          "Bears like honey."
+          "I am on fire."
+          "Toast."))
+
+
+'(print
+ (aggregate-responses *options*
+   (survey :title "Learning Skills Inventory"
+           :options *options* :items *items*)))
