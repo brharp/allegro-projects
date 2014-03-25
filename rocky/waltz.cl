@@ -1,17 +1,17 @@
 ;;;; -*- Mode: Lisp; Syntax: Common-Lisp -*-
 ;;;; Code from Paradigms of AI Programming
 ;;;; Copyright (c) 1991 Peter Norvig
-;;;; Modified for logic diagrams by Brent Harp
+
 
 ;;;; File waltz.lisp: Line-labeling using Waltz filtering.
 
 (defstruct diagram "A diagram is a list of vertexes." vertexes)
 
 (defstruct (vertex (:print-function print-vertex))
-  (name      nil  :type atom)
-  (type      'AND :type (member AND OR NOT))
-  (neighbors nil  :type list)  ; of vertex
-  (labelings nil  :type list)) ; of lists of (member + -)))))
+  (name      nil :type atom)
+  (type      'L  :type (member L Y W T))
+  (neighbors nil :type list)  ; of vertex
+  (labelings nil :type list)) ; of lists of (member + - L R)))))
 
 (defun ambiguous-vertex-p (vertex)
   "A vertex is ambiguous if it has more than one labeling."
@@ -33,10 +33,10 @@
   ;; In these labelings, R means an arrow pointing away from 
   ;; the vertex, L means an arrow pointing towards it.
   (case vertex-type
-    ((AND)  '((- - -) (- + -) (+ - -) (+ + +)))
-    ((OR)   '((- - -) (- + +) (+ - +) (+ + +)))
-    ((NOT)  '((- +) (+ -)))
-    ((TERM) '((-) (+)))))
+    ((L) '((R L)   (L R)   (+ R)   (L +)   (- L)   (R -)))
+    ((Y) '((+ + +) (- - -) (L R -) (- L R) (R - L)))
+    ((T) '((R L +) (R L -) (R L L) (R L R)))
+    ((W) '((L R +) (- - +) (+ + -)))))
 
 (defun print-labelings (diagram)
   "Label the diagram by propagating constraints and then
@@ -207,17 +207,6 @@
                      (vertex-labelings A)))
     diagram))
 
-(defun on (diagram vertex-a vertex-b)
-  "Turn a wire on. That is, label the wire with a T."
-  (let* ((A (find-vertex vertex-a diagram))
-         (B (find-vertex vertex-b diagram))
-         (i (position B (vertex-neighbors A))))
-    (assert (not (null i)))
-    (setf (vertex-labelings A)
-          (find-all-if #'(lambda (l) (eq (nth i l) '+))
-                     (vertex-labelings A)))
-    diagram))
-
 (defun find-labelings (diagram)
   "Return a list of all consistent labelings of the diagram."
   (every #'propagate-constraints (diagram-vertexes diagram))
@@ -238,7 +227,7 @@
         ;; Check that the number of neighbors is right for
         ;; the vertex type (and that the vertex type is legal)
         (when (/= (length (v-d-neighbors v-d))
-                  (case v-type ((AND OR) 3) ((NOT) 2) ((TERM) 1) (t -1)))
+                  (case v-type ((W Y T) 3) ((L) 2) (t -1)))
           (warn "Illegal type/neighbor combo: ~a" v-d)
           (incf errors))
         ;; Check that each neighbor B is connected to
@@ -250,8 +239,7 @@
                                  (member A (v-d-neighbors v-d2))))
                         vertex-descriptors))
             (warn "Inconsistent vertex: ~a-~a" A B)
-            (incf errors)))
-        ))
+            (incf errors)))))
     (when (> errors 0)
       (error "Inconsistent diagram.  ~d total error~:p."
              errors)))
